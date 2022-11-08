@@ -2,7 +2,7 @@
 
 ## Installation
 
-```go
+```shell-session
 export GOPRIVATE=github.com/hashicorp/vault-client-go
 go get github.com/averche/vault-run
 ```

@@ -55,7 +55,7 @@ func main() {
 func acl(ctx context.Context, client *vault.Client) ([]string, error) {
 	resp, err := client.Read(ctx, "/sys/internal/ui/resultant-acl")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("resultant-acl: %w", err)
 	}
 
 	p, ok := resp.Data["exact_paths"]
@@ -112,12 +112,12 @@ func populateEnvironment(ctx context.Context, client *vault.Client, permitted []
 			return r == '/' || r == '-'
 		})
 
-		if len(parts) != 0 && parts[0] == "secret" {
-			parts = parts[:1]
+		if len(parts) != 0 && parts[0] == "SECRET" {
+			parts = parts[1:]
 		}
 
-		if len(parts) != 0 && parts[0] == "data" {
-			parts = parts[:1]
+		if len(parts) != 0 && parts[0] == "DATA" {
+			parts = parts[1:]
 		}
 
 		return fmt.Sprintf("VAULT_%s", strings.Join(parts, "_"))
@@ -130,7 +130,7 @@ func populateEnvironment(ctx context.Context, client *vault.Client, permitted []
 		if status(err, http.StatusNotFound) {
 			continue
 		} else if err != nil {
-			return fmt.Errorf("error reading secret: %w", err)
+			return fmt.Errorf("error reading secret: %s: %w", path, err)
 		}
 
 		prefix := prefix(path)
