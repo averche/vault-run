@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,7 +9,8 @@ import (
 	"os/exec"
 	"strings"
 
-	vault "github.com/hashicorp/vault-client-go"
+	"github.com/hashicorp/vault-client-go"
+
 	"golang.org/x/exp/slices"
 )
 
@@ -21,14 +21,10 @@ func main() {
 
 	ctx := context.Background()
 
-	configuration := vault.DefaultConfiguration()
-	configuration.BaseAddress = "http://localhost:8200"
-
-	if err := configuration.LoadEnvironment(); err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := vault.NewClient(configuration)
+	client, err := vault.New(
+		vault.FromEnv,
+		vault.WithBaseAddress("http://localhost:8200"),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -127,7 +123,7 @@ func populateEnvironment(ctx context.Context, client *vault.Client, permitted []
 	for _, path := range permitted {
 		resp, err := client.Read(ctx, path)
 
-		if status(err, http.StatusNotFound) {
+		if vault.IsErrorStatus(err, http.StatusNotFound) {
 			continue
 		} else if err != nil {
 			return fmt.Errorf("error reading secret: %s: %w", path, err)
@@ -167,12 +163,4 @@ func toStrings(slice []interface{}) ([]string, error) {
 	}
 
 	return stings, nil
-}
-
-func status(err error, status int) bool {
-	var e *vault.ErrorResponse
-	if errors.As(err, &e) && e.StatusCode == status {
-		return true
-	}
-	return false
 }
